@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Memo Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: url("wet-sphere-reflective-water-abstract-beauty-generated-by-ai.jpg") no-repeat center center fixed;
+      background-size: cover;
+      color: #333;
+    }
+
+    .overlay {
+      background-color: rgba(255, 255, 255, 0.85);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #222;
+    }
+
+    .form-section, .search-section, .table-section {
+      background: white;
+      padding: 15px;
+      margin: 20px auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      max-width: 900px;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 4px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #0078D7;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+
+    button:hover {
+      background-color: #005A9E;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background-color: #0078D7;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>📑 Memo Dashboard</h1>
+
+    <div class="form-section">
+      <h2>Add / Edit Memo</h2>
+      <form id="memoForm">
+        <label>Subject:</label>
+        <input type="text" id="subject" required>
+
+        <label>From:</label>
+        <input type="text" id="from" required>
+
+        <label>To:</label>
+        <input type="text" id="to" required>
+
+        <label>Received Date:</label>
+        <input type="date" id="receivedDate" required>
+
+        <label>Dispatched Date:</label>
+        <input type="date" id="dispatchedDate" required>
+
+        <button type="submit">Save Memo</button>
+      </form>
+    </div>
+
+    <div class="search-section">
+      <h2>Search Memos</h2>
+      <input type="text" id="searchBar" placeholder="Search by subject, from, or to...">
+    </div>
+
+    <div class="table-section">
+      <h2>Memo Records</h2>
+      <button onclick="downloadCSV()">⬇ Download Memos</button>
+      <table id="memoTable">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Received Date</th>
+            <th>Dispatched Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let editIndex = -1;
+
+    document.getElementById("memoForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const subject = document.getElementById("subject").value;
+      const from = document.getElementById("from").value;
+      const to = document.getElementById("to").value;
+      const receivedDate = document.getElementById("receivedDate").value;
+      const dispatchedDate = document.getElementById("dispatchedDate").value;
+
+      let memos = JSON.parse(localStorage.getItem("memos")) || [];
+
+      if (editIndex === -1) {
+        memos.push({ subject, from, to, receivedDate, dispatchedDate });
+      } else {
+        memos[editIndex] = { subject, from, to, receivedDate, dispatchedDate };
+        editIndex = -1;
+      }
+
+      localStorage.setItem("memos", JSON.stringify(memos));
+      this.reset();
+      loadMemos();
+    });
+
+    function loadMemos() {
+      const memos = JSON.parse(localStorage.getItem("memos")) || [];
+      const tbody = document.querySelector("#memoTable tbody");
+      tbody.innerHTML = "";
+
+      memos.forEach((memo, index) => {
+        const row = `<tr>
+          <td>${memo.subject}</td>
+          <td>${memo.from}</td>
+          <td>${memo.to}</td>
+          <td>${memo.receivedDate}</td>
+          <td>${memo.dispatchedDate}</td>
+          <td>
+            <button onclick="editMemo(${index})">Edit</button>
+            <button onclick="deleteMemo(${index})">Delete</button>
+          </td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function editMemo(index) {
+      const memos = JSON.parse(localStorage.getItem("memos")) || [];
+      const memo = memos[index];
+
+      document.getElementById("subject").value = memo.subject;
+      document.getElementById("from").value = memo.from;
+      document.getElementById("to").value = memo.to;
+      document.getElementById("receivedDate").value = memo.receivedDate;
+      document.getElementById("dispatchedDate").value = memo.dispatchedDate;
+
+      editIndex = index;
+    }
+
+    function deleteMemo(index) {
+      let memos = JSON.parse(localStorage.getItem("memos")) || [];
+      memos.splice(index, 1);
+      localStorage.setItem("memos", JSON.stringify(memos));
+      loadMemos();
+    }
+
+    function downloadCSV() {
+      const memos = JSON.parse(localStorage.getItem("memos")) || [];
+      let csv = "Subject,From,To,Received Date,Dispatched Date\n";
+
+      memos.forEach(m => {
+        csv += `${m.subject},${m.from},${m.to},${m.receivedDate},${m.dispatchedDate}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "memos.csv";
+      a.click();
+    }
+
+    document.getElementById("searchBar").addEventListener("keyup", function() {
+      const value = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#memoTable tbody tr");
+
+      rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+      });
+    });
+
+    window.onload = loadMemos;
+  </script>
+</body>
+</html>
